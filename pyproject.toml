@@ -1,0 +1,25 @@
+[project]
+name = "vocora-server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Ihar Myshkevich", email = "33940074+IgorMy@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.142.2",
+    "pydantic-settings>=2.15.0",
+]
+
+[tool.fastapi]
+entrypoint = "src.main:app"
+
+[tool.uv]
+package = false
+
+[tool.ruff.lint]
+extend-select = ["I", "TID252"]  # I: orden de imports, TID252: prohibir relativos
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
