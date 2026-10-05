@@ -5,8 +5,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
-from src.audit.model import AuditRequest, LogEntry
-from src.audit.schema import AuditRequestUpdate
+from src.shared.audit.model import AuditRequest, LogEntry
+from src.shared.audit.schema import AuditRequestUpdate
 
 
 class AuditRequestRepository:

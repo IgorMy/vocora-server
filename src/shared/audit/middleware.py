@@ -6,9 +6,10 @@ from collections.abc import Awaitable, Callable
 from fastapi import Request, Response
 from pydantic import JsonValue
 
-from src.audit.model import AuditRequest
-from src.audit.repository import AuditRequestRepository
-from src.audit.schema import AuditRequestUpdate
+from src.shared.audit.log import current_audit_request_id
+from src.shared.audit.model import AuditRequest
+from src.shared.audit.repository import AuditRequestRepository
+from src.shared.audit.schema import AuditRequestUpdate
 from src.shared.database.engine import get_session_factory
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,7 @@ async def audit_request_middleware(
         )
     )
     request.state.audit_request_id = audit_request_id
+    _ = current_audit_request_id.set(audit_request_id)
 
     try:
         response = await call_next(request)

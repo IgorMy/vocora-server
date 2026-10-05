@@ -9,10 +9,12 @@ from sqlmodel import Field
 
 from src.shared.database.table import TableModel
 
+LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
 
 class LogEntry(BaseModel):
     timestamp: datetime.datetime
-    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    level: LogLevel
     event: str
     extra: dict[str, JsonValue] | None = None
 
