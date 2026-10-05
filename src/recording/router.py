@@ -1,12 +1,13 @@
 from typing import Annotated
 
-from fastapi import Depends, Response
+from fastapi import Depends, Request, Response
 from fastapi.params import File
 from fastapi.routing import APIRouter
 
 from src.recording.schema.request import UploadRecordingRequest
 from src.recording.services.upload_recording import upload_recording_service
 from src.shared.auth import require_token
+from src.shared.rate_limit import limiter
 
 router = APIRouter(
     prefix="/recording",
@@ -26,9 +27,12 @@ router = APIRouter(
         201: {"description": "Recording uploaded successfully"},
         200: {"description": "Recording already exists"},
         400: {"description": "Invalid request"},
+        429: {"description": "Too many requests"},
     },
 )
+@limiter.limit("10/minute")  # pyright: ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
 async def upload_recording(
-    request: Annotated[UploadRecordingRequest, File()],
+    request: Request,  # pyright: ignore[reportUnusedParameter]  # required by slowapi
+    data: Annotated[UploadRecordingRequest, File()],
 ):
-    return await upload_recording_service(request)
+    return await upload_recording_service(data)
