@@ -973,6 +973,20 @@ wheels = [
 ]
 
 [[package]]
+name = "scalar-fastapi"
+version = "1.9.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bc/18/4314770c7a9a90171ef7fdae8dd100e69ceea7ffbff8e4e3c30b95f2bd2b/scalar_fastapi-1.9.1.tar.gz", hash = "sha256:a54104c434655c457fdbad3c181d3368be07c63ddbb7a5a084c83fdfa7239333", size = 10906, upload-time = "2026-09-25T10:47:41.198Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d0/ed/9b927292c8e40fec09defb517ddc11c17f5a66a1129922521b7e81385ff6/scalar_fastapi-1.9.1-py3-none-any.whl", hash = "sha256:fc7fdba6e60fb016a57b3eca59621773179c133abb6d496611df9575f97555a8", size = 8594, upload-time = "2026-09-25T10:47:40.296Z" },
+]
+
+[[package]]
 name = "sentry-sdk"
 version = "2.71.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1170,7 +1184,7 @@ wheels = [
 
 [[package]]
 name = "vocora-server"
-version = "0.1.0"
+version = "0.1.1"
 source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
@@ -1178,6 +1192,7 @@ dependencies = [
     { name = "pgvector" },
     { name = "psycopg", extra = ["binary", "pool"] },
     { name = "pydantic-settings" },
+    { name = "scalar-fastapi" },
     { name = "slowapi" },
     { name = "sqlmodel" },
 ]
@@ -1189,6 +1204,7 @@ requires-dist = [
     { name = "pgvector", specifier = "==0.5.0" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = "==3.3.6" },
     { name = "pydantic-settings", specifier = "==2.15.0" },
+    { name = "scalar-fastapi", specifier = "==1.9.1" },
     { name = "slowapi", specifier = "==0.1.10" },
     { name = "sqlmodel", specifier = "==0.0.47" },
 ]

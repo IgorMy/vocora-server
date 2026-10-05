@@ -29,5 +29,4 @@ API_PREFIX = f"/v{VERSION.split('.')[0]}"
 
 # API docs live under the versioned prefix too, next to the endpoints they describe
 DOCS_URL = f"{API_PREFIX}/docs"
-REDOC_URL = f"{API_PREFIX}/redoc"
 OPENAPI_URL = f"{API_PREFIX}/openapi.json"

@@ -1,6 +1,11 @@
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
+from fastapi.responses import HTMLResponse
+from scalar_fastapi import (
+    Layout,
+    get_scalar_api_reference,  # pyright: ignore[reportUnknownVariableType]
+)
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -15,7 +20,6 @@ from src.shared.version import (
     API_PREFIX,
     DOCS_URL,
     OPENAPI_URL,
-    REDOC_URL,
     VERSION,
 )
 
@@ -29,9 +33,11 @@ async def lifespan(app: FastAPI):  # pyright: ignore[reportUnusedParameter]
 
 
 app = FastAPI(
+    title="Vocora API",
     version=VERSION,
-    docs_url=DOCS_URL,
-    redoc_url=REDOC_URL,
+    # Swagger UI and ReDoc are replaced by Scalar, served at DOCS_URL below
+    docs_url=None,
+    redoc_url=None,
     openapi_url=OPENAPI_URL,
     lifespan=lifespan,
 )
@@ -46,7 +52,21 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=global_rate_limit_middleware)
 app.add_exception_handler(Exception, unhandled_exception_handler)
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
+
 # Routes
+@app.get(DOCS_URL, include_in_schema=False)
+async def docs() -> HTMLResponse:
+    return get_scalar_api_reference(
+        openapi_url=OPENAPI_URL,
+        title=app.title,
+        layout=Layout.CLASSIC,
+        # Name of the scheme FastAPI generates for HTTPBearer (see require_token)
+        authentication={"preferredSecurityScheme": "HTTPBearer"},
+        # Keep the token in the browser's localStorage across reloads and restarts
+        persist_auth=True,
+    )
+
+
 # Infrastructure, outside the API version: its path must not change between versions
 app.include_router(health_router)
 
