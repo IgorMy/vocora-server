@@ -14,9 +14,10 @@ async def upload_recording_service(
     folder = settings.recordings_dir / folder_name
 
     files = {
-        "mixed": folder / "mixed.wav",
-        "uplink": folder / "uplink.wav",
-        "downlink": folder / "downlink.wav",
+        "mixed": folder / f"mixed.{request.mixed.filename.split('.')[-1].lower()}",  # pyright: ignore[reportOptionalMemberAccess]
+        "uplink": folder / f"uplink.{request.uplink.filename.split('.')[-1].lower()}",  # pyright: ignore[reportOptionalMemberAccess]
+        "downlink": folder
+        / f"downlink.{request.downlink.filename.split('.')[-1].lower()}",  # pyright: ignore[reportOptionalMemberAccess]
     }
 
     content = {
