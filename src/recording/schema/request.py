@@ -3,7 +3,9 @@ from typing import Annotated, Literal
 
 from fastapi import Form, UploadFile
 from fastapi.params import File
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from src.recording.constants import EXTENSION_FORMAT, MAX_AUDIO_FILE_SIZE
 
 
 class UploadRecordingRequest(BaseModel):
@@ -13,3 +15,45 @@ class UploadRecordingRequest(BaseModel):
     contact: Annotated[str, Form()]
     date: Annotated[datetime.datetime, Form()]
     direction: Annotated[Literal["incoming", "outgoing", "call"], Form()]
+
+    @field_validator("mixed")
+    @classmethod
+    def validate_audio_extension(cls, value: UploadFile) -> UploadFile:
+        filename = (value.filename or "").lower()
+        if not any(filename.endswith(ext) for ext in EXTENSION_FORMAT):
+            raise ValueError(
+                f"mixed: Invalid file extension. Allowed extensions: {EXTENSION_FORMAT}"
+            )
+        if value.size is not None and value.size > MAX_AUDIO_FILE_SIZE:
+            raise ValueError(
+                f"mixed: File is too large. Maximum size is {MAX_AUDIO_FILE_SIZE // (1024 * 1024)} MB"
+            )
+        return value
+
+    @field_validator("uplink")
+    @classmethod
+    def validate_uplink_extension(cls, value: UploadFile) -> UploadFile:
+        filename = (value.filename or "").lower()
+        if not any(filename.endswith(ext) for ext in EXTENSION_FORMAT):
+            raise ValueError(
+                f"uplink: Invalid file extension. Allowed extensions: {EXTENSION_FORMAT}"
+            )
+        if value.size is not None and value.size > MAX_AUDIO_FILE_SIZE:
+            raise ValueError(
+                f"uplink: File is too large. Maximum size is {MAX_AUDIO_FILE_SIZE // (1024 * 1024)} MB"
+            )
+        return value
+
+    @field_validator("downlink")
+    @classmethod
+    def validate_downlink_extension(cls, value: UploadFile) -> UploadFile:
+        filename = (value.filename or "").lower()
+        if not any(filename.endswith(ext) for ext in EXTENSION_FORMAT):
+            raise ValueError(
+                f"downlink: Invalid file extension. Allowed extensions: {EXTENSION_FORMAT}"
+            )
+        if value.size is not None and value.size > MAX_AUDIO_FILE_SIZE:
+            raise ValueError(
+                f"downlink: File is too large. Maximum size is {MAX_AUDIO_FILE_SIZE // (1024 * 1024)} MB"
+            )
+        return value
