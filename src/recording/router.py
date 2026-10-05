@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import Depends, Form, Response
+from fastapi import Depends, Response
+from fastapi.params import File
 from fastapi.routing import APIRouter
 
 from src.recording.schema.request import UploadRecordingRequest
@@ -28,6 +29,6 @@ router = APIRouter(
     },
 )
 async def upload_recording(
-    request: Annotated[UploadRecordingRequest, Form()],
+    request: Annotated[UploadRecordingRequest, File()],
 ):
     return await upload_recording_service(request)

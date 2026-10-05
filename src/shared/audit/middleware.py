@@ -14,8 +14,16 @@ from src.shared.database.engine import get_session_factory
 
 logger = logging.getLogger(__name__)
 
-# Docker and monitors hit these constantly; auditing them would flood the table
-EXCLUDED_PATH_PREFIXES = ("/health",)
+EXCLUDED_PATH_PREFIXES = (
+    # Docker and monitors hit these constantly; auditing them would flood the table
+    "/health",
+    # API docs (Swagger UI, ReDoc) and the OpenAPI schema they load
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    # Browsers request it on their own when opening any page
+    "/favicon.ico",
+)
 
 
 async def _create_audit_request(audit_request: AuditRequest) -> uuid.UUID | None:
