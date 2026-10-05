@@ -11,6 +11,7 @@ from src.shared.audit.model import AuditRequest
 from src.shared.audit.repository import AuditRequestRepository
 from src.shared.audit.schema import AuditRequestUpdate
 from src.shared.database.engine import get_session_factory
+from src.shared.version import DOCS_URL, OPENAPI_URL, REDOC_URL
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +19,9 @@ EXCLUDED_PATH_PREFIXES = (
     # Docker and monitors hit these constantly; auditing them would flood the table
     "/health",
     # API docs (Swagger UI, ReDoc) and the OpenAPI schema they load
-    "/docs",
-    "/redoc",
-    "/openapi.json",
+    DOCS_URL,
+    REDOC_URL,
+    OPENAPI_URL,
     # Browsers request it on their own when opening any page
     "/favicon.ico",
 )
