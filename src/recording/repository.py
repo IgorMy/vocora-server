@@ -1,6 +1,8 @@
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 
 from src.recording.model import Recording
 from src.recording.schema.update import RecordingUpdate
@@ -14,6 +16,12 @@ class RecordingRepository(BaseRepository[Recording]):
 
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, Recording)
+
+    async def get_by_folder(self, folder: str) -> Recording | None:
+        result = await self.session.execute(
+            select(Recording).where(col(Recording.folder) == folder)
+        )
+        return result.scalar_one_or_none()
 
     async def create(self, recording: Recording, *, actor: ACTOR) -> Recording:
         return await self._create(recording, actor=actor)

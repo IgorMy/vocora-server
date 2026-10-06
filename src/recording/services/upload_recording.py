@@ -1,12 +1,19 @@
-from fastapi import Response
+import hashlib
 
+from fastapi import Response
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.recording.model import Recording
+from src.recording.repository import RecordingRepository
 from src.recording.schema.request import UploadRecordingRequest
-from src.shared.audit_request.log import audit_log
+from src.recording.schema.update import RecordingUpdate
+from src.shared.audit_request.log import audit_log, current_audit_request_id
 from src.shared.config import settings
 
 
 async def upload_recording_service(
     request: UploadRecordingRequest,
+    session: AsyncSession,
 ) -> Response:
 
     folder_name = f"{request.date.isoformat()}-{request.contact}-{request.direction}"
@@ -52,6 +59,41 @@ async def upload_recording_service(
     for name, file in files.items():
         _ = file.write_bytes(content[name])
 
-    await audit_log("INFO", "Recording saved")
+    hashes = {name: hashlib.sha256(data).hexdigest() for name, data in content.items()}
+    audio_format = files["mixed"].suffix
+    repository = RecordingRepository(session)
+    recording = await repository.get_by_folder(folder_name)
+    if recording is None:
+        recording = await repository.create(
+            Recording(
+                folder=folder_name,
+                date=request.date,
+                contact=request.contact,
+                direction=request.direction,
+                audio_format=audio_format,  # pyright: ignore[reportArgumentType]
+                mixed_sha256=hashes["mixed"],
+                uplink_sha256=hashes["uplink"],
+                downlink_sha256=hashes["downlink"],
+                audit_request_id=current_audit_request_id.get(),
+            ),
+            actor="request",
+        )
+    else:
+        # New content for an existing recording: it has to be processed again
+        await repository.update(
+            recording.id,
+            RecordingUpdate(
+                audio_format=audio_format,  # pyright: ignore[reportArgumentType]
+                mixed_sha256=hashes["mixed"],
+                uplink_sha256=hashes["uplink"],
+                downlink_sha256=hashes["downlink"],
+                version=recording.version + 1,
+                status="pending",
+                audit_request_id=current_audit_request_id.get(),
+            ),
+            actor="request",
+        )
+
+    await audit_log("INFO", "Recording saved", {"recording_id": str(recording.id)})
 
     return Response(status_code=201)

@@ -7,6 +7,7 @@ from fastapi.routing import APIRouter
 from src.recording.schema.request import UploadRecordingRequest
 from src.recording.services.upload_recording import upload_recording_service
 from src.shared.auth import require_token
+from src.shared.database.engine import SessionDep
 from src.shared.rate_limit import limiter
 
 router = APIRouter(
@@ -34,5 +35,6 @@ router = APIRouter(
 async def upload_recording(
     request: Request,  # pyright: ignore[reportUnusedParameter]  # required by slowapi
     data: Annotated[UploadRecordingRequest, File()],
+    session: SessionDep,
 ):
-    return await upload_recording_service(data)
+    return await upload_recording_service(data, session)
