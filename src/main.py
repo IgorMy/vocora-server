@@ -15,6 +15,7 @@ from src.recording import router as recording_router
 from src.shared.audit_request.middleware import audit_request_middleware
 from src.shared.config import settings
 from src.shared.database.engine import close_database, init_database
+from src.shared.queue.app import queue_app
 from src.shared.rate_limit import global_rate_limit_middleware, limiter
 from src.shared.version import (
     API_PREFIX,
@@ -28,7 +29,9 @@ from src.shared.version import (
 async def lifespan(app: FastAPI):  # pyright: ignore[reportUnusedParameter]
     settings.recordings_dir.mkdir(parents=True, exist_ok=True)
     await init_database()
-    yield
+    # Opened only to queue jobs; they run in the separate worker process (src/worker.py)
+    async with queue_app.open_async():
+        yield
     await close_database()
 
 

@@ -17,6 +17,9 @@ class RecordingRepository(BaseRepository[Recording]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, Recording)
 
+    async def get(self, recording_id: uuid.UUID) -> Recording | None:
+        return await self.session.get(Recording, recording_id)
+
     async def get_by_folder(self, folder: str) -> Recording | None:
         result = await self.session.execute(
             select(Recording).where(col(Recording.folder) == folder)

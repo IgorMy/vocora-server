@@ -7,6 +7,7 @@ from src.recording.model import Recording
 from src.recording.repository import RecordingRepository
 from src.recording.schema.request import UploadRecordingRequest
 from src.recording.schema.update import RecordingUpdate
+from src.recording.task import process_recording
 from src.shared.audit_request.log import audit_log, current_audit_request_id
 from src.shared.config import settings
 
@@ -78,8 +79,10 @@ async def upload_recording_service(
             ),
             actor="request",
         )
+        version = recording.version
     else:
         # New content for an existing recording: it has to be processed again
+        version = recording.version + 1
         await repository.update(
             recording.id,
             RecordingUpdate(
@@ -87,7 +90,7 @@ async def upload_recording_service(
                 mixed_sha256=hashes["mixed"],
                 uplink_sha256=hashes["uplink"],
                 downlink_sha256=hashes["downlink"],
-                version=recording.version + 1,
+                version=version,
                 status="pending",
                 audit_request_id=current_audit_request_id.get(),
             ),
@@ -95,5 +98,11 @@ async def upload_recording_service(
         )
 
     await audit_log("INFO", "Recording saved", {"recording_id": str(recording.id)})
+
+    # lock: jobs of the same recording run one after another, never at the same time
+    job_id = await process_recording.configure(lock=str(recording.id)).defer_async(
+        recording_id=str(recording.id), version=version
+    )
+    await audit_log("INFO", "Recording queued for processing", {"job_id": job_id})
 
     return Response(status_code=201)
