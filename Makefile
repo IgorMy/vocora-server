@@ -22,6 +22,9 @@ worker: migrate
 download_model:
 	uv run python -m src.shared.transcription.download
 
-# Build and start the whole app in Docker (database, migrations, api and worker)
+# Build and start the whole app in Docker (database, migrations, api and worker).
+# The data folders are created first: if Docker had to create them for the bind
+# mounts they would belong to root, and the containers' user couldn't write in them.
 up:
+	mkdir -p data/recordings data/models
 	$(COMPOSE) up -d --wait --build
