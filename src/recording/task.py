@@ -27,8 +27,13 @@ async def process_recording(recording_id: str, version: int) -> None:
         repository = RecordingRepository(session)
         recording = await repository.get(uuid.UUID(recording_id))
 
-        # Overwritten after this job was queued: the job for the new version will process it
-        if recording is None or recording.version != version:
+        # Overwritten after this job was queued (the job for the new version will
+        # process it) or deleted: nothing to do
+        if (
+            recording is None
+            or recording.version != version
+            or recording.deleted_at is not None
+        ):
             return
 
         process_log: list[dict[str, JsonValue]] = [

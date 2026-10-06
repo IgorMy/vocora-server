@@ -93,6 +93,8 @@ async def upload_recording_service(
                 version=version,
                 status="pending",
                 audit_request_id=current_audit_request_id.get(),
+                # Uploading new content brings a deleted recording back
+                deleted_at=None,
             ),
             actor="request",
         )

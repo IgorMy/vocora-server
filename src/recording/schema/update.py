@@ -30,3 +30,4 @@ class RecordingUpdate(BaseModel):
     language: str | None = Field(default=None)
 
     audit_request_id: uuid.UUID | None = Field(default=None)
+    deleted_at: datetime.datetime | None = Field(default=None)

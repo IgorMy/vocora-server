@@ -51,6 +51,11 @@ class Recording(AuditedTable, table=True):
         default=None, foreign_key="audit_request.id", ondelete="SET NULL"
     )
 
+    # Soft delete: hidden from the API but kept, together with its audio files
+    deleted_at: datetime.datetime | None = Field(
+        default=None, sa_type=DateTime(timezone=True), index=True
+    )
+
     created_at: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now(tz=datetime.UTC),
         sa_type=DateTime(timezone=True),
