@@ -1,14 +1,20 @@
+import asyncio
 import datetime
 import uuid
 
 from procrastinate import RetryStrategy
 from pydantic import JsonValue
 
+from src.recording.constants import SPEAKER
 from src.recording.repository import RecordingRepository
+from src.recording.schema.segment import RecordingSegment
 from src.recording.schema.update import RecordingUpdate
 from src.shared.audit_request.model import LogEntry
+from src.shared.config import settings
 from src.shared.database.engine import get_session_factory
 from src.shared.queue.app import queue_app
+from src.shared.transcription.schema import Transcription
+from src.shared.transcription.whisper import transcribe
 
 
 @queue_app.task(
@@ -46,8 +52,40 @@ async def process_recording(recording_id: str, version: int) -> None:
         )
 
         try:
-            # Transcription and embedding will run here
-            pass
+            # Each side of the call has its own channel, so who said what comes
+            # for free: transcribe both and merge their segments by time.
+            # Whisper is blocking, it runs in a thread to keep the worker loop free.
+            folder = settings.recordings_dir / recording.folder
+            transcriptions: dict[SPEAKER, Transcription] = {
+                "uplink": await asyncio.to_thread(
+                    transcribe, folder / f"uplink{recording.audio_format}"
+                ),
+                "downlink": await asyncio.to_thread(
+                    transcribe, folder / f"downlink{recording.audio_format}"
+                ),
+            }
+            segments = sorted(
+                (
+                    RecordingSegment(
+                        speaker=speaker, start=s.start, end=s.end, text=s.text
+                    )
+                    for speaker, transcription in transcriptions.items()
+                    for s in transcription.segments
+                ),
+                key=lambda segment: segment.start,
+            )
+            # Each channel detects its language; keep the most confident one
+            language = max(
+                transcriptions.values(), key=lambda t: t.language_probability
+            ).language
+            duration_seconds = max(t.duration_seconds for t in transcriptions.values())
+            # Readable dialogue: "[01:05] Ana: ..." (uplink is the phone owner)
+            dialogue = "\n".join(
+                f"[{int(segment.start) // 60:02d}:{int(segment.start) % 60:02d}] "
+                + f"{'Yo' if segment.speaker == 'uplink' else recording.contact}: "
+                + segment.text
+                for segment in segments
+            )
         except Exception as exc:
             process_log.append(
                 LogEntry(
@@ -72,12 +110,21 @@ async def process_recording(recording_id: str, version: int) -> None:
                 timestamp=datetime.datetime.now(tz=datetime.UTC),
                 level="INFO",
                 event="Processing finished",
+                extra={
+                    "language": language,
+                    "duration_seconds": duration_seconds,
+                    "segments": len(segments),
+                },
             ).model_dump(mode="json", exclude_none=True)
         )
         await repository.update(
             recording.id,
             RecordingUpdate(
                 status="done",
+                transcription=dialogue,
+                segments=[segment.model_dump() for segment in segments],
+                language=language,
+                duration_seconds=duration_seconds,
                 processed_at=datetime.datetime.now(tz=datetime.UTC),
                 process_log=process_log,
             ),

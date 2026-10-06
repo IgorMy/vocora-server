@@ -26,6 +26,7 @@ class RecordingUpdate(BaseModel):
     processed_at: datetime.datetime | None = Field(default=None)
 
     transcription: str | None = Field(default=None)
+    segments: list[dict[str, JsonValue]] | None = Field(default=None)
     language: str | None = Field(default=None)
 
     audit_request_id: uuid.UUID | None = Field(default=None)

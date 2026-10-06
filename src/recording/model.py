@@ -40,6 +40,10 @@ class Recording(AuditedTable, table=True):
 
     # Result
     transcription: str | None = Field(default=None, sa_type=Text)
+    # Both channels merged by time: [{"speaker", "start", "end", "text"}]
+    segments: list[dict[str, JsonValue]] | None = Field(
+        default=None, sa_column=Column(JSONB, nullable=True)
+    )
     language: str | None = Field(default=None)
 
     # Audit of the upload that created or last overwrote the recording

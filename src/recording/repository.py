@@ -11,8 +11,11 @@ from src.shared.audit_change.repository import BaseRepository
 
 
 class RecordingRepository(BaseRepository[Recording]):
-    # process_log grows on every processing step, auditing it would only add noise
-    ignored_columns: frozenset[str] = frozenset({"updated_at", "process_log"})
+    # process_log grows on every processing step and segments repeats the
+    # transcription with timestamps: auditing them would only add noise
+    ignored_columns: frozenset[str] = frozenset(
+        {"updated_at", "process_log", "segments"}
+    )
 
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, Recording)

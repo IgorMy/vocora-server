@@ -19,6 +19,18 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
 
+    # Transcription (faster-whisper). The model is downloaded with `make download_model`
+    # into whisper_model_dir/<whisper_model>.
+    whisper_model: str = "large-v3-turbo"
+    whisper_model_dir: Path = Path("data/models")
+    whisper_device: str = "cpu"  # "cpu" or "cuda"
+    whisper_compute_type: str = "int8"  # "int8" on CPU, "float16" on GPU
+    whisper_cpu_threads: int = 4
+
+    @property
+    def whisper_model_path(self) -> Path:
+        return self.whisper_model_dir / self.whisper_model
+
     @property
     def database_url(self) -> URL:
         return URL.create(
