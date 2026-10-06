@@ -6,10 +6,10 @@ from collections.abc import Awaitable, Callable
 from fastapi import Request, Response
 from pydantic import JsonValue
 
-from src.shared.audit.log import current_audit_request_id
-from src.shared.audit.model import AuditRequest
-from src.shared.audit.repository import AuditRequestRepository
-from src.shared.audit.schema import AuditRequestUpdate
+from src.shared.audit_request.log import current_audit_request_id
+from src.shared.audit_request.model import AuditRequest
+from src.shared.audit_request.repository import AuditRequestRepository
+from src.shared.audit_request.schema import AuditRequestUpdate
 from src.shared.database.engine import get_session_factory
 from src.shared.version import DOCS_URL, OPENAPI_URL
 

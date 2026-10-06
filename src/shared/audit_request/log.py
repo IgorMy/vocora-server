@@ -5,8 +5,9 @@ from contextvars import ContextVar
 
 from pydantic import JsonValue
 
-from src.shared.audit.model import LogEntry, LogLevel
-from src.shared.audit.repository import AuditRequestRepository
+from src.shared.audit_request.constants import LOG_LEVEL
+from src.shared.audit_request.model import LogEntry
+from src.shared.audit_request.repository import AuditRequestRepository
 from src.shared.database.engine import get_session_factory
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ current_audit_request_id: ContextVar[uuid.UUID | None] = ContextVar(
 
 
 async def audit_log(
-    level: LogLevel, event: str, extra: dict[str, JsonValue] | None = None
+    level: LOG_LEVEL, event: str, extra: dict[str, JsonValue] | None = None
 ) -> None:
     """
     Logs to stdout and appends the entry to the logs of the current request's audit.

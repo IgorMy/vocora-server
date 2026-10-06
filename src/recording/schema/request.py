@@ -1,11 +1,15 @@
 import datetime
-from typing import Annotated, Literal
+from typing import Annotated, get_args
 
 from fastapi import Form, UploadFile
 from fastapi.params import File
 from pydantic import BaseModel, field_validator
 
-from src.recording.constants import EXTENSION_FORMAT, MAX_AUDIO_FILE_SIZE
+from src.recording.constants import (
+    DIRECTION,
+    EXTENSION_FORMAT,
+    MAX_AUDIO_FILE_SIZE,
+)
 
 
 class UploadRecordingRequest(BaseModel):
@@ -14,15 +18,15 @@ class UploadRecordingRequest(BaseModel):
     downlink: Annotated[UploadFile, File()]
     contact: Annotated[str, Form()]
     date: Annotated[datetime.datetime, Form()]
-    direction: Annotated[Literal["incoming", "outgoing", "call"], Form()]
+    direction: Annotated[DIRECTION, Form()]
 
     @field_validator("mixed")
     @classmethod
     def validate_audio_extension(cls, value: UploadFile) -> UploadFile:
         filename = (value.filename or "").lower()
-        if not any(filename.endswith(ext) for ext in EXTENSION_FORMAT):
+        if not filename.endswith(get_args(EXTENSION_FORMAT)):
             raise ValueError(
-                f"mixed: Invalid file extension. Allowed extensions: {EXTENSION_FORMAT}"
+                f"mixed: Invalid file extension. Allowed extensions: {get_args(EXTENSION_FORMAT)}"
             )
         if value.size is not None and value.size > MAX_AUDIO_FILE_SIZE:
             raise ValueError(
@@ -34,9 +38,9 @@ class UploadRecordingRequest(BaseModel):
     @classmethod
     def validate_uplink_extension(cls, value: UploadFile) -> UploadFile:
         filename = (value.filename or "").lower()
-        if not any(filename.endswith(ext) for ext in EXTENSION_FORMAT):
+        if not filename.endswith(get_args(EXTENSION_FORMAT)):
             raise ValueError(
-                f"uplink: Invalid file extension. Allowed extensions: {EXTENSION_FORMAT}"
+                f"uplink: Invalid file extension. Allowed extensions: {get_args(EXTENSION_FORMAT)}"
             )
         if value.size is not None and value.size > MAX_AUDIO_FILE_SIZE:
             raise ValueError(
@@ -48,9 +52,9 @@ class UploadRecordingRequest(BaseModel):
     @classmethod
     def validate_downlink_extension(cls, value: UploadFile) -> UploadFile:
         filename = (value.filename or "").lower()
-        if not any(filename.endswith(ext) for ext in EXTENSION_FORMAT):
+        if not filename.endswith(get_args(EXTENSION_FORMAT)):
             raise ValueError(
-                f"downlink: Invalid file extension. Allowed extensions: {EXTENSION_FORMAT}"
+                f"downlink: Invalid file extension. Allowed extensions: {get_args(EXTENSION_FORMAT)}"
             )
         if value.size is not None and value.size > MAX_AUDIO_FILE_SIZE:
             raise ValueError(

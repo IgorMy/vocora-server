@@ -1,7 +1,7 @@
 from fastapi import Response
 
 from src.recording.schema.request import UploadRecordingRequest
-from src.shared.audit.log import audit_log
+from src.shared.audit_request.log import audit_log
 from src.shared.config import settings
 
 

@@ -12,7 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from src.exception import rate_limit_exceeded_handler, unhandled_exception_handler
 from src.health import router as health_router
 from src.recording import router as recording_router
-from src.shared.audit.middleware import audit_request_middleware
+from src.shared.audit_request.middleware import audit_request_middleware
 from src.shared.config import settings
 from src.shared.database.engine import close_database, init_database
 from src.shared.rate_limit import global_rate_limit_middleware, limiter

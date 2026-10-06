@@ -1,6 +1,8 @@
 from sqlmodel import SQLModel
 
-from src.shared.audit.model import AuditRequest
+from src.recording.model import Recording
+from src.shared.audit_change.model import AuditChange
+from src.shared.audit_request.model import AuditRequest
 
 # Import every table model here. A model only registers in SQLModel.metadata
 # when its module is imported, so anything missing from this file is invisible
@@ -9,4 +11,4 @@ from src.shared.audit.model import AuditRequest
 metadata = SQLModel.metadata
 
 
-__all__ = ["AuditRequest", "metadata"]
+__all__ = ["AuditChange", "AuditRequest", "Recording", "metadata"]

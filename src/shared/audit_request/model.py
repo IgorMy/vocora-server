@@ -1,20 +1,18 @@
 import datetime
 import uuid
-from typing import Literal
 
 from pydantic import BaseModel, JsonValue
 from sqlalchemy import Column, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field
 
+from src.shared.audit_request.constants import LOG_LEVEL
 from src.shared.database.table import TableModel
-
-LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 class LogEntry(BaseModel):
     timestamp: datetime.datetime
-    level: LogLevel
+    level: LOG_LEVEL
     event: str
     extra: dict[str, JsonValue] | None = None
 
