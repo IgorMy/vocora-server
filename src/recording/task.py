@@ -14,7 +14,7 @@ from src.shared.config import settings
 from src.shared.database.engine import get_session_factory
 from src.shared.queue.app import queue_app
 from src.shared.transcription.schema import Transcription
-from src.shared.transcription.whisper import transcribe
+from src.shared.transcription.whisper import detect_language, transcribe
 
 
 @queue_app.task(
@@ -56,12 +56,19 @@ async def process_recording(recording_id: str, version: int) -> None:
             # for free: transcribe both and merge their segments by time.
             # Whisper is blocking, it runs in a thread to keep the worker loop free.
             folder = settings.recordings_dir / recording.folder
+            # The language is detected once on the mixed audio, which has both voices,
+            # and forced on each channel: a channel with little speech (someone who
+            # mostly listens) can't be trusted to detect it and gets transcribed as
+            # gibberish in another language.
+            language = await asyncio.to_thread(
+                detect_language, folder / f"mixed{recording.audio_format}"
+            )
             transcriptions: dict[SPEAKER, Transcription] = {
                 "uplink": await asyncio.to_thread(
-                    transcribe, folder / f"uplink{recording.audio_format}"
+                    transcribe, folder / f"uplink{recording.audio_format}", language
                 ),
                 "downlink": await asyncio.to_thread(
-                    transcribe, folder / f"downlink{recording.audio_format}"
+                    transcribe, folder / f"downlink{recording.audio_format}", language
                 ),
             }
             segments = sorted(
@@ -74,10 +81,6 @@ async def process_recording(recording_id: str, version: int) -> None:
                 ),
                 key=lambda segment: segment.start,
             )
-            # Each channel detects its language; keep the most confident one
-            language = max(
-                transcriptions.values(), key=lambda t: t.language_probability
-            ).language
             duration_seconds = max(t.duration_seconds for t in transcriptions.values())
             # Readable dialogue: "[01:05] Ana: ..." (uplink is the phone owner)
             dialogue = "\n".join(

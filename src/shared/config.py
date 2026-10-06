@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # Transcription (faster-whisper). The model is downloaded with `make download_model`
     # into whisper_model_dir/<whisper_model>.
-    whisper_model: str = "large-v3-turbo"
+    whisper_model: str = "large-v3"
     whisper_model_dir: Path = Path("data/models")
     whisper_device: str = "cpu"  # "cpu" or "cuda"
     whisper_compute_type: str = "int8"  # "int8" on CPU, "float16" on GPU
