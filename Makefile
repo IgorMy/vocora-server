@@ -1,6 +1,6 @@
 COMPOSE := docker compose -f docker/compose.yaml --env-file .env
 
-.PHONY: database migrate local_dev worker download_model
+.PHONY: database migrate local_dev worker download_model up
 
 # Start only the PostgreSQL service in the background and wait until it is healthy
 database:
@@ -21,3 +21,7 @@ worker: migrate
 # Download the transcription model set in WHISPER_MODEL into WHISPER_MODEL_DIR
 download_model:
 	uv run python -m src.shared.transcription.download
+
+# Build and start the whole app in Docker (database, migrations, api and worker)
+up:
+	$(COMPOSE) up -d --wait --build

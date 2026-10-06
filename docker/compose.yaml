@@ -1,5 +1,17 @@
 name: vocora
 
+# Shared by the api, migrate and worker services: same image, different command
+x-server: &server
+  build:
+    context: ..
+    dockerfile: docker/server/Dockerfile
+  image: vocora-server
+  env_file: ../.env
+  environment:
+    # Inside the compose network the database is reached by its service name
+    POSTGRES_HOST: database
+    POSTGRES_PORT: 5432
+
 services:
   database:
     build: database
@@ -17,3 +29,40 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Applies the pending migrations and exits; api and worker wait for it
+  migrate:
+    <<: *server
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      database:
+        condition: service_healthy
+
+  api:
+    <<: *server
+    restart: unless-stopped
+    ports:
+      # 0.0.0.0: reachable from other devices, like the Android app
+      - "0.0.0.0:${API_PORT:?API_PORT is not set in .env}:8000"
+    volumes:
+      - ../data/recordings:/app/data/recordings
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/server/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    <<: *server
+    command: ["python", "-m", "src.worker"]
+    restart: unless-stopped
+    volumes:
+      - ../data/recordings:/app/data/recordings
+      - ../data/models:/app/data/models
+    depends_on:
+      migrate:
+        condition: service_completed_successfully

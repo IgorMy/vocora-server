@@ -1,0 +1,8 @@
+# Build context of docker/server/Dockerfile (the repository root)
+.git
+.venv
+.env
+.ruff_cache
+**/__pycache__
+data
+docker/database/volume
