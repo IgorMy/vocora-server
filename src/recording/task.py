@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import uuid
+from pathlib import Path
 
 from procrastinate import RetryStrategy
 from pydantic import JsonValue
@@ -13,8 +14,7 @@ from src.shared.audit_request.model import LogEntry
 from src.shared.config import settings
 from src.shared.database.engine import get_session_factory
 from src.shared.queue.app import queue_app
-from src.shared.transcription.schema import Transcription
-from src.shared.transcription.whisper import detect_language, transcribe
+from src.shared.transcription.whisper import transcribe_files
 
 
 @queue_app.task(
@@ -65,17 +65,13 @@ async def process_recording(recording_id: str, version: int) -> None:
             # and forced on each channel: a channel with little speech (someone who
             # mostly listens) can't be trusted to detect it and gets transcribed as
             # gibberish in another language.
-            language = await asyncio.to_thread(
-                detect_language, folder / f"mixed{recording.audio_format}"
-            )
-            transcriptions: dict[SPEAKER, Transcription] = {
-                "uplink": await asyncio.to_thread(
-                    transcribe, folder / f"uplink{recording.audio_format}", language
-                ),
-                "downlink": await asyncio.to_thread(
-                    transcribe, folder / f"downlink{recording.audio_format}", language
-                ),
+            channels: dict[SPEAKER, Path] = {
+                "uplink": folder / f"uplink{recording.audio_format}",
+                "downlink": folder / f"downlink{recording.audio_format}",
             }
+            language, transcriptions = await asyncio.to_thread(
+                transcribe_files, folder / f"mixed{recording.audio_format}", channels
+            )
             segments = sorted(
                 (
                     RecordingSegment(
