@@ -8,7 +8,11 @@ from pathlib import Path
 from faster_whisper import WhisperModel, decode_audio
 
 from src.shared.config import settings
-from src.shared.transcription.schema import TranscribedSegment, Transcription
+from src.shared.transcription.schema import (
+    TranscribedSegment,
+    TranscribedWord,
+    Transcription,
+)
 
 
 def transcribe_files[K](
@@ -55,15 +59,29 @@ def _detect_language(model: WhisperModel, audio: Path) -> str:
 
 
 def _transcribe(model: WhisperModel, audio: Path, language: str) -> Transcription:
-    """vad_filter skips the silences, which in a single call channel is about half the audio."""
-    segments, info = model.transcribe(str(audio), vad_filter=True, language=language)
+    """
+    vad_filter skips the silences, which in a single call channel is about half the audio.
+    word_timestamps gives the time of every word: a segment can span several
+    sentences separated by pauses, too coarse to interleave two channels.
+    """
+    segments, info = model.transcribe(
+        str(audio), vad_filter=True, language=language, word_timestamps=True
+    )
     return Transcription(
         language=info.language,
         language_probability=info.language_probability,
         duration_seconds=info.duration,
         # segments is a lazy generator: the transcription actually runs here
         segments=[
-            TranscribedSegment(start=s.start, end=s.end, text=s.text.strip())
+            TranscribedSegment(
+                start=s.start,
+                end=s.end,
+                text=s.text.strip(),
+                words=[
+                    TranscribedWord(start=w.start, end=w.end, text=w.word)
+                    for w in s.words or []
+                ],
+            )
             for s in segments
         ],
     )

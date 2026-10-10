@@ -6,7 +6,7 @@ from pathlib import Path
 from procrastinate import RetryStrategy
 from pydantic import JsonValue
 
-from src.recording.constants import SPEAKER
+from src.recording.constants import SPEAKER, TURN_PAUSE_SECONDS
 from src.recording.repository import RecordingRepository
 from src.recording.schema.segment import RecordingSegment
 from src.recording.schema.update import RecordingUpdate
@@ -14,6 +14,7 @@ from src.shared.audit_request.model import LogEntry
 from src.shared.config import settings
 from src.shared.database.engine import get_session_factory
 from src.shared.queue.app import queue_app
+from src.shared.transcription.schema import Transcription
 from src.shared.transcription.whisper import transcribe_files
 
 
@@ -58,7 +59,7 @@ async def process_recording(recording_id: str, version: int) -> None:
 
         try:
             # Each side of the call has its own channel, so who said what comes
-            # for free: transcribe both and merge their segments by time.
+            # for free: transcribe both and interleave their words by time.
             # Whisper is blocking, it runs in a thread to keep the worker loop free.
             folder = settings.recordings_dir / recording.folder
             # The language is detected once on the mixed audio, which has both voices,
@@ -72,16 +73,7 @@ async def process_recording(recording_id: str, version: int) -> None:
             language, transcriptions = await asyncio.to_thread(
                 transcribe_files, folder / f"mixed{recording.audio_format}", channels
             )
-            segments = sorted(
-                (
-                    RecordingSegment(
-                        speaker=speaker, start=s.start, end=s.end, text=s.text
-                    )
-                    for speaker, transcription in transcriptions.items()
-                    for s in transcription.segments
-                ),
-                key=lambda segment: segment.start,
-            )
+            segments = _build_turns(transcriptions)
             duration_seconds = max(t.duration_seconds for t in transcriptions.values())
             # Readable dialogue: "[01:05] Ana: ..." (uplink is the phone owner)
             dialogue = "\n".join(
@@ -134,3 +126,42 @@ async def process_recording(recording_id: str, version: int) -> None:
             ),
             actor="system",
         )
+
+
+def _build_turns(
+    transcriptions: dict[SPEAKER, Transcription],
+) -> list[RecordingSegment]:
+    """
+    Interleaves the words of both channels by time and groups them into turns.
+    A turn ends when the other speaker says something or after a long pause, so
+    "hey" (0 s) and "I'm recording this" (3 s) from one channel don't end up in
+    a single line ahead of the "hey" the other speaker said in between.
+    """
+    words: list[tuple[float, float, SPEAKER, str]] = sorted(
+        (
+            (word.start, word.end, speaker, word.text)
+            for speaker, transcription in transcriptions.items()
+            for segment in transcription.segments
+            for word in segment.words
+        ),
+        key=lambda word: word[0],
+    )
+
+    turns: list[RecordingSegment] = []
+    for start, end, speaker, text in words:
+        last = turns[-1] if turns else None
+        if (
+            last is not None
+            and last.speaker == speaker
+            and start - last.end <= TURN_PAUSE_SECONDS
+        ):
+            last.end = end
+            last.text += text
+        else:
+            turns.append(
+                RecordingSegment(speaker=speaker, start=start, end=end, text=text)
+            )
+
+    for turn in turns:
+        turn.text = turn.text.strip()
+    return turns
