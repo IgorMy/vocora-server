@@ -6,5 +6,3 @@ DIRECTION = Literal["incoming", "outgoing", "call"]
 STATUS = Literal["pending", "transcribing", "embedding", "done", "failed"]
 SPEAKER = Literal["uplink", "downlink"]
 DELETED_FILTER = Literal["exclude", "include", "only"]
-# Silence (seconds) after which the same speaker starts a new turn in the dialogue
-TURN_PAUSE_SECONDS = 1.5

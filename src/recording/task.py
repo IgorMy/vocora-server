@@ -6,7 +6,7 @@ from pathlib import Path
 from procrastinate import RetryStrategy
 from pydantic import JsonValue
 
-from src.recording.constants import SPEAKER, TURN_PAUSE_SECONDS
+from src.recording.constants import SPEAKER
 from src.recording.repository import RecordingRepository
 from src.recording.schema.segment import RecordingSegment
 from src.recording.schema.update import RecordingUpdate
@@ -133,9 +133,9 @@ def _build_turns(
 ) -> list[RecordingSegment]:
     """
     Interleaves the words of both channels by time and groups them into turns.
-    A turn ends when the other speaker says something or after a long pause, so
-    "hey" (0 s) and "I'm recording this" (3 s) from one channel don't end up in
-    a single line ahead of the "hey" the other speaker said in between.
+    A turn lasts until the other speaker says something, however long the pauses,
+    so "hey" (0 s) and "I'm recording this" (3 s) from one channel don't end up
+    in a single line ahead of the "hey" the other speaker said in between.
     """
     words: list[tuple[float, float, SPEAKER, str]] = sorted(
         (
@@ -150,11 +150,7 @@ def _build_turns(
     turns: list[RecordingSegment] = []
     for start, end, speaker, text in words:
         last = turns[-1] if turns else None
-        if (
-            last is not None
-            and last.speaker == speaker
-            and start - last.end <= TURN_PAUSE_SECONDS
-        ):
+        if last is not None and last.speaker == speaker:
             last.end = end
             last.text += text
         else:
